@@ -12,9 +12,12 @@ using MonoMod.RuntimeDetour;
 /*
  * These patches fix a few issues regarding the 32 and 64 cube ending cutscenes.
  *
- * If you do anything to end the 32 cutscene early (load a different or new save file, restart the run in speedrun mode)
- * while the pixelization effect is active, the game will crash due to Render Target shenanigans. Fix this by clearing
- * that out properly during disposal.
+ * If you end the 32 or 64 cube end cutscenes early, i.e. by choosing a new save slot or by choosing reset speedrun (if
+ * speedrun mode is enabled), there are many possible crashes you might encounter. If the pixelation phase is active in
+ * the 32 cube cutscene, the game will crash due to an invalid render target. In most other phases in either cutscene,
+ * the game will crash due to a null reference. These patches fix all of these issues by clearing the render target and
+ * performing null checks when relevant. It also resets the sky opacity to full opacity when either cutscene is
+ * destroyed, since the cutscene value of 0f might be left over depending on when the cutscene is reset.
  *
  * In both cutscenes, the sound effects fade out but the initial starting volume does not respect your chosen sfx volume
  * and will always start at full volume. Fix this by using an ILHook to multiply the sound volume with the setting.
