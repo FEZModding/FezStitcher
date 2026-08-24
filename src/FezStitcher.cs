@@ -12,13 +12,18 @@ namespace FezStitcher
 
 	public class FezStitcher(Game game) : GameComponent(game)
 	{
-        private List<IFezStitch> Patches = [];
+        private readonly List<IFezStitch> Patches = [];
+
+        public static void Log(object message)
+        {
+            Console.WriteLine("[FezStitcher] " + message);
+        }
 
         public override void Initialize()
         {
             base.Initialize();
 
-            Console.WriteLine("FezStitcher patching...");
+            Log("Patching...");
 
             foreach (Type type in Assembly.GetExecutingAssembly().GetTypes()
                     .Where(t => t.IsClass && typeof(IFezStitch).IsAssignableFrom(t)))
@@ -29,7 +34,7 @@ namespace FezStitcher
                 Patches.Add(patch);
             }
 
-            Console.WriteLine("FezStitcher finished patching!");
+            Log("Finished patching!");
         }
 
         protected override void Dispose(bool disposing)
@@ -40,7 +45,7 @@ namespace FezStitcher
             {
                 patch.Dispose();
             }
-            Patches = [];
+            Patches.Clear();
         }
 	}
 }
