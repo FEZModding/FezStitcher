@@ -32,6 +32,14 @@ namespace FezStitcher.Patches
         Hook FezGridUpdateHook;
         FieldInfo FractalOuterShellMesh;
         Hook FractalUpdateHook;
+        FieldInfo AxisDnaFatAxisMesh;
+        Hook AxisDnaUpdateHook;
+        FieldInfo TetraordialOozeTetraMesh;
+        Hook TetraordialOozeUpdateHook;
+        FieldInfo VibratingMembraneLinesMesh;
+        Hook VibratingMembraneUpdateHook;
+        FieldInfo DrumSoloStarMesh;
+        Hook DrumSoloUpdateHook;
 
         ILHook PixelizerDrawSetSoundVolumeHook;
         ILHook ZoomOutUpdateSetSoundVolumeHook;
@@ -59,6 +67,10 @@ namespace FezStitcher.Patches
             Type Pixelizer = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.Pixelizer");
             Type FezGrid = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.FezGrid");
             Type Fractal = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.Fractal");
+            Type AxisDna = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.AxisDna");
+            Type TetraordialOoze = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.TetraordialOoze");
+            Type VibratingMembrane = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.VibratingMembrane");
+            Type DrumSolo = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.DrumSolo");
 
             Type ZoomOut = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene64.ZoomOut");
 
@@ -71,6 +83,14 @@ namespace FezStitcher.Patches
             FezGridUpdateHook = new Hook(FezGrid.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), FezGridUpdateHooked);
             FractalOuterShellMesh = Fractal.GetField("OuterShellMesh", BindingFlags.NonPublic | BindingFlags.Instance);
             FractalUpdateHook = new Hook(Fractal.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), FractalUpdateHooked);
+            AxisDnaFatAxisMesh = AxisDna.GetField("FatAxisMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            AxisDnaUpdateHook = new Hook(AxisDna.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), AxisDnaUpdateHooked);
+            TetraordialOozeTetraMesh = TetraordialOoze.GetField("TetraMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            TetraordialOozeUpdateHook = new Hook(TetraordialOoze.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), TetraordialOozeUpdateHooked);
+            VibratingMembraneLinesMesh = VibratingMembrane.GetField("LinesMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            VibratingMembraneUpdateHook = new Hook(VibratingMembrane.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), VibratingMembraneUpdateHooked);
+            DrumSoloStarMesh = DrumSolo.GetField("StarMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            DrumSoloUpdateHook = new Hook(DrumSolo.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), DrumSoloUpdateHooked);
 
             PixelizerDrawSetSoundVolumeHook = new ILHook(Pixelizer.GetMethod("Draw", BindingFlags.Public | BindingFlags.Instance), GenerateILHookToMultiplyVolume);
             ZoomOutUpdateSetSoundVolumeHook = new ILHook(ZoomOut.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), GenerateILHookToMultiplyVolume);
@@ -127,6 +147,50 @@ namespace FezStitcher.Patches
             original(self, gameTime);
         }
 
+        private void AxisDnaUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh FatAxisMesh = (Mesh)AxisDnaFatAxisMesh.GetValue(self);
+            if (FatAxisMesh == null)
+            {
+                FezStitcher.Log("AxisDna.Update - FatAxisMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
+        }
+
+        private void TetraordialOozeUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh TetraMesh = (Mesh)TetraordialOozeTetraMesh.GetValue(self);
+            if (TetraMesh == null)
+            {
+                FezStitcher.Log("TetraordialOoze.Update - TetraMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
+        }
+
+        private void VibratingMembraneUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh LinesMesh = (Mesh)VibratingMembraneLinesMesh.GetValue(self);
+            if (LinesMesh == null)
+            {
+                FezStitcher.Log("VibratingMembrane.Update - LinesMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
+        }
+
+        private void DrumSoloUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh StarMesh = (Mesh)DrumSoloStarMesh.GetValue(self);
+            if (StarMesh == null)
+            {
+                FezStitcher.Log("DrumSolo.Update - StarMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
+        }
+
         private void GenerateILHookToMultiplyVolume(ILContext il)
         {
             ILCursor cursor = new(il);
@@ -148,6 +212,10 @@ namespace FezStitcher.Patches
             FractalUpdateHook.Dispose();
             PixelizerDrawSetSoundVolumeHook.Dispose();
             ZoomOutUpdateSetSoundVolumeHook.Dispose();
+            AxisDnaUpdateHook.Dispose();
+            TetraordialOozeUpdateHook.Dispose();
+            VibratingMembraneUpdateHook.Dispose();
+            DrumSoloUpdateHook.Dispose();
 #if DEBUG
             EndCutscene32HostCycleHook.Dispose();
 #endif // DEBUG
