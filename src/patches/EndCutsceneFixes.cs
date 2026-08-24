@@ -1,7 +1,9 @@
 using System.Reflection;
 using FezEngine.Services;
+using FezEngine.Structure;
 using FezEngine.Tools;
 using FezGame;
+using FezGame.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
@@ -21,12 +23,22 @@ namespace FezStitcher.Patches
 {
     public class EndCutsceneFixes : IFezStitch
     {
+        FieldInfo EndCutscene32HostNoDestroy;
+        Hook EndCutscene32HostTryDestroyHook;
+
         FieldInfo PixelizerLowResRT;
-
         Hook PixelizerDisposeHook;
-        ILHook PixelizerDrawSetSoundVolumeHook;
+        FieldInfo FezGridTetraMesh;
+        Hook FezGridUpdateHook;
+        FieldInfo FractalOuterShellMesh;
+        Hook FractalUpdateHook;
 
+        ILHook PixelizerDrawSetSoundVolumeHook;
         ILHook ZoomOutUpdateSetSoundVolumeHook;
+
+#if DEBUG
+        Hook EndCutscene32HostCycleHook;
+#endif // DEBUG
 
         [ServiceDependency]
         public ISoundManager SoundManager { private get; set; }
@@ -34,16 +46,52 @@ namespace FezStitcher.Patches
         [ServiceDependency]
         public ITargetRenderingManager TargetRenderer { private get; set; }
 
+        [ServiceDependency]
+        public ILevelManager LevelManager { private get; set; }
+
+        [ServiceDependency]
+        public IGameStateManager GameState { private get; set; }
+
         public void Init()
         {
+            Type EndCutscene32Host = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32Host");
+
             Type Pixelizer = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.Pixelizer");
+            Type FezGrid = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.FezGrid");
+            Type Fractal = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.Fractal");
+
             Type ZoomOut = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene64.ZoomOut");
 
-            PixelizerLowResRT = Pixelizer.GetField("LowResRT", BindingFlags.NonPublic | BindingFlags.Instance);
+            EndCutscene32HostNoDestroy = EndCutscene32Host.GetField("noDestroy", BindingFlags.NonPublic | BindingFlags.Instance);
+            EndCutscene32HostTryDestroyHook = new Hook(EndCutscene32Host.GetMethod("TryDestroy", BindingFlags.NonPublic | BindingFlags.Instance), EndCutscene32HostTryDestroyHooked);
 
+            PixelizerLowResRT = Pixelizer.GetField("LowResRT", BindingFlags.NonPublic | BindingFlags.Instance);
             PixelizerDisposeHook = new Hook(Pixelizer.GetMethod("Dispose", BindingFlags.NonPublic | BindingFlags.Instance), PixelizerDisposeHooked);
+            FezGridTetraMesh = FezGrid.GetField("TetraMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            FezGridUpdateHook = new Hook(FezGrid.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), FezGridUpdateHooked);
+            FractalOuterShellMesh = Fractal.GetField("OuterShellMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            FractalUpdateHook = new Hook(Fractal.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), FractalUpdateHooked);
+
             PixelizerDrawSetSoundVolumeHook = new ILHook(Pixelizer.GetMethod("Draw", BindingFlags.Public | BindingFlags.Instance), GenerateILHookToMultiplyVolume);
             ZoomOutUpdateSetSoundVolumeHook = new ILHook(ZoomOut.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), GenerateILHookToMultiplyVolume);
+
+#if DEBUG
+            EndCutscene32HostCycleHook = new Hook(EndCutscene32Host.GetMethod("Cycle", BindingFlags.Public | BindingFlags.Instance), (Action<DrawableGameComponent> original, DrawableGameComponent self) => {
+                FezStitcher.Log("EndCutscene32Host.Cycle called");
+                original(self);
+            });
+#endif // DEBUG
+        }
+
+        private void EndCutscene32HostTryDestroyHooked(Action<DrawableGameComponent> original, DrawableGameComponent self)
+        {
+            bool noDestroy = (bool)EndCutscene32HostNoDestroy.GetValue(self);
+            if (LevelManager.Name != "DRUM" && !noDestroy)
+            {
+                FezStitcher.Log("EndCutscene32Host is being destroyed");
+                GameState.SkyOpacity = 1f; // Reset this value since otherwise it might remain at 0
+            }
+            original(self);
         }
 
         private void PixelizerDisposeHooked(Action<DrawableGameComponent, bool> original, DrawableGameComponent self, bool disposing)
@@ -55,6 +103,28 @@ namespace FezStitcher.Patches
             SoundManager.SoundEffectVolume = SettingsManager.Settings.SoundVolume;
 
             original(self, disposing);
+        }
+
+        private void FezGridUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh TetraMesh = (Mesh)FezGridTetraMesh.GetValue(self);
+            if (TetraMesh == null)
+            {
+                FezStitcher.Log("FezGrid.Update - TetraMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
+        }
+
+        private void FractalUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh OuterShellMesh = (Mesh)FractalOuterShellMesh.GetValue(self);
+            if (OuterShellMesh == null)
+            {
+                FezStitcher.Log("Fractal.Update - OuterShellMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
         }
 
         private void GenerateILHookToMultiplyVolume(ILContext il)
@@ -72,9 +142,15 @@ namespace FezStitcher.Patches
 
         public void Dispose()
         {
+            EndCutscene32HostTryDestroyHook.Dispose();
             PixelizerDisposeHook.Dispose();
+            FezGridUpdateHook.Dispose();
+            FractalUpdateHook.Dispose();
             PixelizerDrawSetSoundVolumeHook.Dispose();
             ZoomOutUpdateSetSoundVolumeHook.Dispose();
+#if DEBUG
+            EndCutscene32HostCycleHook.Dispose();
+#endif // DEBUG
         }
     }
 }
