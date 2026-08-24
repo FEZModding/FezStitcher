@@ -25,6 +25,8 @@ namespace FezStitcher.Patches
     {
         FieldInfo EndCutscene32HostNoDestroy;
         Hook EndCutscene32HostTryDestroyHook;
+        FieldInfo EndCutscene64HostNoDestroy;
+        Hook EndCutscene64HostTryDestroyHook;
 
         FieldInfo PixelizerLowResRT;
         Hook PixelizerDisposeHook;
@@ -41,11 +43,17 @@ namespace FezStitcher.Patches
         FieldInfo DrumSoloStarMesh;
         Hook DrumSoloUpdateHook;
 
+        FieldInfo MulticoloredSpaceCubesMesh;
+        Hook MulticoloredSpaceUpdateHook;
+        FieldInfo DotsAplentyCloneMesh;
+        Hook DotsAplentyUpdateHook;
+
         ILHook PixelizerDrawSetSoundVolumeHook;
         ILHook ZoomOutUpdateSetSoundVolumeHook;
 
 #if DEBUG
         Hook EndCutscene32HostCycleHook;
+        Hook EndCutscene64HostCycleHook;
 #endif // DEBUG
 
         [ServiceDependency]
@@ -63,6 +71,7 @@ namespace FezStitcher.Patches
         public void Init()
         {
             Type EndCutscene32Host = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32Host");
+            Type EndCutscene64Host = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene64Host");
 
             Type Pixelizer = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.Pixelizer");
             Type FezGrid = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.FezGrid");
@@ -73,9 +82,13 @@ namespace FezStitcher.Patches
             Type DrumSolo = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene32.DrumSolo");
 
             Type ZoomOut = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene64.ZoomOut");
+            Type MulticoloredSpace = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene64.MulticoloredSpace");
+            Type DotsAplenty = typeof(Fez).Assembly.GetType("FezGame.Components.EndCutscene64.DotsAplenty");
 
             EndCutscene32HostNoDestroy = EndCutscene32Host.GetField("noDestroy", BindingFlags.NonPublic | BindingFlags.Instance);
             EndCutscene32HostTryDestroyHook = new Hook(EndCutscene32Host.GetMethod("TryDestroy", BindingFlags.NonPublic | BindingFlags.Instance), EndCutscene32HostTryDestroyHooked);
+            EndCutscene64HostNoDestroy = EndCutscene64Host.GetField("noDestroy", BindingFlags.NonPublic | BindingFlags.Instance);
+            EndCutscene64HostTryDestroyHook = new Hook(EndCutscene64Host.GetMethod("TryDestroy", BindingFlags.NonPublic | BindingFlags.Instance), EndCutscene64HostTryDestroyHooked);
 
             PixelizerLowResRT = Pixelizer.GetField("LowResRT", BindingFlags.NonPublic | BindingFlags.Instance);
             PixelizerDisposeHook = new Hook(Pixelizer.GetMethod("Dispose", BindingFlags.NonPublic | BindingFlags.Instance), PixelizerDisposeHooked);
@@ -92,12 +105,21 @@ namespace FezStitcher.Patches
             DrumSoloStarMesh = DrumSolo.GetField("StarMesh", BindingFlags.NonPublic | BindingFlags.Instance);
             DrumSoloUpdateHook = new Hook(DrumSolo.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), DrumSoloUpdateHooked);
 
+            MulticoloredSpaceCubesMesh = MulticoloredSpace.GetField("CubesMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            MulticoloredSpaceUpdateHook = new Hook(MulticoloredSpace.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), MulticoloredSpaceUpdateHooked);
+            DotsAplentyCloneMesh = DotsAplenty.GetField("CloneMesh", BindingFlags.NonPublic | BindingFlags.Instance);
+            DotsAplentyUpdateHook = new Hook(DotsAplenty.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), DotsAplentyUpdateHooked);
+
             PixelizerDrawSetSoundVolumeHook = new ILHook(Pixelizer.GetMethod("Draw", BindingFlags.Public | BindingFlags.Instance), GenerateILHookToMultiplyVolume);
             ZoomOutUpdateSetSoundVolumeHook = new ILHook(ZoomOut.GetMethod("Update", BindingFlags.Public | BindingFlags.Instance), GenerateILHookToMultiplyVolume);
 
 #if DEBUG
             EndCutscene32HostCycleHook = new Hook(EndCutscene32Host.GetMethod("Cycle", BindingFlags.Public | BindingFlags.Instance), (Action<DrawableGameComponent> original, DrawableGameComponent self) => {
                 FezStitcher.Log("EndCutscene32Host.Cycle called");
+                original(self);
+            });
+            EndCutscene64HostCycleHook = new Hook(EndCutscene64Host.GetMethod("Cycle", BindingFlags.Public | BindingFlags.Instance), (Action<DrawableGameComponent> original, DrawableGameComponent self) => {
+                FezStitcher.Log("EndCutscene64Host.Cycle called");
                 original(self);
             });
 #endif // DEBUG
@@ -109,6 +131,17 @@ namespace FezStitcher.Patches
             if (LevelManager.Name != "DRUM" && !noDestroy)
             {
                 FezStitcher.Log("EndCutscene32Host is being destroyed");
+                GameState.SkyOpacity = 1f; // Reset this value since otherwise it might remain at 0
+            }
+            original(self);
+        }
+
+        private void EndCutscene64HostTryDestroyHooked(Action<DrawableGameComponent> original, DrawableGameComponent self)
+        {
+            bool noDestroy = (bool)EndCutscene64HostNoDestroy.GetValue(self);
+            if (!noDestroy)
+            {
+                FezStitcher.Log("EndCutscene64Host is being destroyed");
                 GameState.SkyOpacity = 1f; // Reset this value since otherwise it might remain at 0
             }
             original(self);
@@ -191,6 +224,28 @@ namespace FezStitcher.Patches
             original(self, gameTime);
         }
 
+        private void MulticoloredSpaceUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh CubesMesh = (Mesh)MulticoloredSpaceCubesMesh.GetValue(self);
+            if (CubesMesh == null)
+            {
+                FezStitcher.Log("MulticoloredSpace.Update - CubesMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
+        }
+
+        private void DotsAplentyUpdateHooked(Action<DrawableGameComponent, GameTime> original, DrawableGameComponent self, GameTime gameTime)
+        {
+            Mesh CloneMesh = (Mesh)DotsAplentyCloneMesh.GetValue(self);
+            if (CloneMesh == null)
+            {
+                FezStitcher.Log("DotsAplenty.Update - CloneMesh is null, bailing");
+                return;
+            }
+            original(self, gameTime);
+        }
+
         private void GenerateILHookToMultiplyVolume(ILContext il)
         {
             ILCursor cursor = new(il);
@@ -216,8 +271,11 @@ namespace FezStitcher.Patches
             TetraordialOozeUpdateHook.Dispose();
             VibratingMembraneUpdateHook.Dispose();
             DrumSoloUpdateHook.Dispose();
+            MulticoloredSpaceUpdateHook.Dispose();
+            DotsAplentyUpdateHook.Dispose();
 #if DEBUG
             EndCutscene32HostCycleHook.Dispose();
+            EndCutscene64HostCycleHook.Dispose();
 #endif // DEBUG
         }
     }
