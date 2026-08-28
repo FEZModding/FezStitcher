@@ -21,6 +21,10 @@ using MonoMod.RuntimeDetour;
  * generated name which can vary between different compilers. We have to do some jank to find it - it's possible that
  * there are situations where this doesn't work, but I believe the constraints on the name and function signature should
  * be enough that we always find it. Simply patch that delegate function to have a null check.
+ *
+ * Also fix minor issue where walking in a secret passage (and thus triggering the MoveUp animation) and then quickly
+ * walking through a door into another room which also has a secret passage, the MoveUp animation would play on that
+ * door. Prevent this by resetting the WentThroughSecretPassage flag after using it
  */
 namespace FezStitcher.Patches
 {
@@ -28,22 +32,30 @@ namespace FezStitcher.Patches
     {
         Type SecretPassagesHost;
         FieldInfo SecretPassagesERumble;
+        FieldInfo SecretPassagesMoveUp;
         Hook SecretPassagesOpenHook;
         Hook SecretPassagesUpdateDelegateHook;
+        Hook SecretPassagesTryInitializeHook;
 
         [ServiceDependency]
         public IPlayerManager PlayerManager { private get; set; }
+
+        [ServiceDependency]
+        public IGameLevelManager LevelManager { private get; set; }
 
         public void Init()
         {
             SecretPassagesHost = typeof(Fez).Assembly.GetType("FezGame.Components.SecretPassagesHost");
             SecretPassagesERumble = SecretPassagesHost.GetField("eRumble", BindingFlags.NonPublic | BindingFlags.Instance);
+            SecretPassagesMoveUp = SecretPassagesHost.GetField("MoveUp", BindingFlags.NonPublic | BindingFlags.Instance);
 
             SecretPassagesOpenHook = new Hook(SecretPassagesHost.GetMethod("Open", BindingFlags.NonPublic | BindingFlags.Instance), SecretPassagesOpenHooked);
 
             MethodInfo Delegate = FindSecretPassagesHostUpdateDelegate();
             if (Delegate != null)
                 SecretPassagesUpdateDelegateHook = new Hook(Delegate, SecretPassagesUpdateDelegateHooked);
+
+            SecretPassagesTryInitializeHook = new Hook(SecretPassagesHost.GetMethod("TryInitialize", BindingFlags.NonPublic | BindingFlags.Instance), SecretPassagesTryInitializeHooked);
         }
 
         private MethodInfo FindSecretPassagesHostUpdateDelegate()
@@ -94,10 +106,23 @@ namespace FezStitcher.Patches
             original(self);
         }
 
+        private void SecretPassagesTryInitializeHooked(Action<GameComponent> original, GameComponent self)
+        {
+            SecretPassagesMoveUp.SetValue(self, false); // Reset MoveUp to prevent animation glitches
+            original(self);
+            if (LevelManager.WentThroughSecretPassage)
+            {
+                // We just used this value to start the MoveUp animation in the current room. Reset it now
+                FezStitcher.Log("Resetting LevelManager.WentThroughSecretPassage");
+                LevelManager.WentThroughSecretPassage = false;
+            }
+        }
+
         public void Dispose()
         {
             SecretPassagesOpenHook.Dispose();
             SecretPassagesUpdateDelegateHook?.Dispose();
+            SecretPassagesTryInitializeHook.Dispose();
         }
     }
 }
