@@ -19,6 +19,11 @@ namespace FezStitcher
             Console.WriteLine("[FezStitcher] " + message);
         }
 
+        public static void LogError(object message)
+        {
+            Console.Error.WriteLine("[FezStitcher]" + message);
+        }
+
         public override void Initialize()
         {
             base.Initialize();

@@ -56,11 +56,11 @@ namespace FezStitcher.Patches
             }
             if (candidates.Count() == 0)
             {
-                Console.Error.WriteLine("WARNING: Couldn't find DotService.Say delegate method to patch... Spiral camera dot text softlocks are still possible. Please report this!");
+                FezStitcher.LogError("WARNING: Couldn't find DotService.Say delegate method to patch... Spiral camera dot text softlocks are still possible. Please report this!");
                 return null;
             }
             if (candidates.Count() > 1)
-                Console.Error.WriteLine("WARNING: MORE THAN ONE DotService.Say delegate method matched... Patching one but it could be wrong! Please report this!");
+                FezStitcher.LogError("WARNING: MORE THAN ONE DotService.Say delegate method matched... Patching one but it could be wrong! Please report this!");
             return candidates[0];
         }
 
