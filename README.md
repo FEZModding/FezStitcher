@@ -8,10 +8,11 @@ FezStitcher is a [HAT](https://github.com/FEZModding/HAT) mod for [FEZ](https://
 
 * Fixes occasional game crash when re-entering Clock Tower
 * Fixes softlock if Dot text appears while the camera is spiraling down
+* Fixes buggy behavior involving secret passages including minor animation bugs and various crashes
 * Various fixes for the 32 cube and 64 cube end cutscenes
     * Fixes several crashes relating to exiting the cutscene early (e.g. by switching save slots or choosing Reset Speedrun in speedrun mode)
     * Fixes the Sound Volume setting always being treated as 100% during portions of the cutscenes
-    * Fixes Pause On Lost Focus always being treated as On during the credits
+* Fixes Pause On Lost Focus always being treated as On during the credits
 
 ## Usage
 
