@@ -4,6 +4,8 @@
 
 FezStitcher is a [HAT](https://github.com/FEZModding/HAT) mod for [FEZ](https://www.fezgame.com/) which fixes some bugs in the vanilla game.
 
+**NOTE:** FEZ is generally less buggy when in singlethreaded mode and I highly recommend enabling it. Currently, FezStitcher does prioritize fixing bugs that are only present in multithreaded mode.
+
 ## Bug Fixes
 
 * Fixes occasional game crash when re-entering Clock Tower
@@ -19,6 +21,7 @@ FezStitcher is a [HAT](https://github.com/FEZModding/HAT) mod for [FEZ](https://
 1. Download and install the [HAT](https://github.com/FEZModding/HAT) mod loader
 2. Download FezStitcher from the Releases page and put the zip file into the `Mods` directory
 3. Run FEZ with HAT and enjoy!
+    * **Optional but recommended:** Turn on singlethreaded mode ("Help & Options" -> "Game Settings" -> "Singlethreaded: On")
 
 ## Build Instructions
 
