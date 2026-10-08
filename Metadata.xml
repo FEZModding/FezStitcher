@@ -2,7 +2,7 @@
 	<Name>FezStitcher</Name>
 	<Description>Mod to fix some vanilla bugs in FEZ</Description>
 	<Author>thearst3rd</Author>
-	<Version>0.1.0</Version>
+	<Version>0.2.0</Version>
 	<LibraryName>FezStitcher.dll</LibraryName>
 	<Dependencies>
 		<DependencyInfo Name="HAT" MinimumVersion="3.0"/>
