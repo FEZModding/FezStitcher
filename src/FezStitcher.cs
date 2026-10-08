@@ -1,6 +1,7 @@
 using System.Reflection;
 using FezEngine.Tools;
 using Microsoft.Xna.Framework;
+using Common;
 
 namespace FezStitcher
 {
@@ -14,14 +15,14 @@ namespace FezStitcher
 	{
         private readonly List<IFezStitch> Patches = [];
 
-        public static void Log(object message)
+        public static void Log(string message)
         {
-            Console.WriteLine("[FezStitcher] " + message);
+            Logger.Log("FezStitcher", message);
         }
 
-        public static void LogError(object message)
+        public static void LogError(string message)
         {
-            Console.Error.WriteLine("[FezStitcher]" + message);
+            Logger.Log("FezStitcher", LogSeverity.Error, message);
         }
 
         public override void Initialize()

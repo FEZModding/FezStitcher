@@ -44,6 +44,10 @@
       <HintPath>$(FezDir)\FNA.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Common">
+      <HintPath>$(FezDir)\Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="MonoMod.RuntimeDetour">
       <HintPath>$(MonoModDir)\MonoMod.RuntimeDetour.dll</HintPath>
       <Private>False</Private>
