@@ -7,6 +7,7 @@
     <DebugType>full</DebugType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
   </PropertyGroup>
 
   <Import Project="$(ProjectDir)UserProperties.xml" />
@@ -25,7 +26,7 @@
         <ModdedAssets Include="$(ProjectDir)\Assets\**\*.*" />
     </ItemGroup>
 
-    <Copy SourceFiles="$(TargetDir)$(TargetName).dll;$(TargetDir)$(TargetName).pdb" DestinationFolder="$(ModCompileOutputDir)" Retries="0" />
+    <Copy SourceFiles="$(TargetDir)$(TargetName).dll;$(TargetDir)$(TargetName).pdb;$(TargetDir)$(TargetName).deps.json" DestinationFolder="$(ModCompileOutputDir)" Retries="0" />
     <Copy SourceFiles="$(ProjectDir)Metadata.xml" DestinationFolder="$(ModCompileOutputDir)" Retries="0" />
     <Copy SourceFiles="$(ProjectDir)LICENSE" DestinationFolder="$(ModCompileOutputDir)" Retries="0" />
   </Target>
