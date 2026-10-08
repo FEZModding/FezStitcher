@@ -5,6 +5,6 @@
 	<Version>0.1.0</Version>
 	<LibraryName>FezStitcher.dll</LibraryName>
 	<Dependencies>
-		<DependencyInfo Name="HAT" MinimumVersion="2.0"/>
+		<DependencyInfo Name="HAT" MinimumVersion="3.0"/>
 	</Dependencies>
 </Metadata>

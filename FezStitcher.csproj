@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net48</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <LangVersion>14.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <DebugType>full</DebugType>
@@ -33,7 +33,7 @@
   <!-- Assemblies. Please use your own copies of FEZ's binaries. -->
   <ItemGroup>
     <Reference Include="FEZ">
-      <HintPath>$(FezDir)\FEZ.exe</HintPath>
+      <HintPath>$(FezDir)\HAT.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="FezEngine">
@@ -42,10 +42,6 @@
     </Reference>
     <Reference Include="FNA">
       <HintPath>$(FezDir)\FNA.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="MonoMod">
-      <HintPath>$(MonoModDir)\MonoMod.exe</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="MonoMod.RuntimeDetour">
